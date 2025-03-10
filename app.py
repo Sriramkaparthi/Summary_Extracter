@@ -42,7 +42,13 @@ def preprocess_text(text):
         text = ""
     return text
 
-# Extract keywords from user file using TF-IDF
+# Train LDA model on dataset
+vectorizer = CountVectorizer(stop_words='english', max_features=5000)
+X = vectorizer.fit_transform(df["abstract"].astype(str).apply(preprocess_text))
+lda = LatentDirichletAllocation(n_components=5, random_state=42)
+lda.fit(X)
+
+# Extract top keywords from user text using TF-IDF
 def extract_keywords(text, top_n=5):
     vectorizer = TfidfVectorizer(stop_words='english', max_features=5000)
     tfidf_matrix = vectorizer.fit_transform([text])
@@ -51,12 +57,16 @@ def extract_keywords(text, top_n=5):
     top_keywords = feature_array[tfidf_sorting][:top_n]
     return list(top_keywords)
 
-# Assign topic dynamically based on extracted keywords
-def get_topic_from_keywords(text):
-    keywords = extract_keywords(preprocess_text(text))
-    return " ".join(keywords) if keywords else "Unknown Topic"
+# Predict topic based on keywords and LDA
+def get_topic_from_lda(text):
+    processed_text = preprocess_text(text)
+    X_new = vectorizer.transform([processed_text])
+    topic_distribution = lda.transform(X_new)[0]
+    topic_idx = topic_distribution.argmax()
+    keywords = extract_keywords(processed_text)
+    return f"{', '.join(keywords)}"
 
-# Extract images from PDF (from main.py)
+# Extract images from PDF
 def extract_images_from_pdf(file_bytes):
     doc = fitz.open(stream=file_bytes, filetype="pdf")
     images = []
@@ -70,7 +80,7 @@ def extract_images_from_pdf(file_bytes):
                 images.append(img_pil)
     return images
 
-# Extract images from DOCX (from main.py)
+# Extract images from DOCX
 def extract_images_from_docx(file):
     doc = docx.Document(file)
     images = []
@@ -127,7 +137,7 @@ elif input_type == 'URL':
         text = fetch_text_from_url(url)
 
 if text:
-    topic = get_topic_from_keywords(text)
+    topic = get_topic_from_lda(text)
     summary = summarize(text, ratio=0.2)
     
     st.subheader(f"Predicted Topic: {topic}")
