@@ -5,7 +5,7 @@ matplotlib
 scikit-learn
 nltk
 summa
-pymupdf
+pymupdf==1.22.5  # Specify the latest stable version
 pillow
 python-docx
 requests
