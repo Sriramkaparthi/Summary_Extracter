@@ -10,3 +10,4 @@ pillow
 python-docx
 requests
 beautifulsoup4
+openpyxl
