@@ -34,4 +34,3 @@ The application uses **LDA (Latent Dirichlet Allocation) for topic modeling** an
 - **Data Handling**
   - `pandas`, `numpy`
 
-## 📂 Project Structure
