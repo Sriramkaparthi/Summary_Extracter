@@ -23,13 +23,9 @@ stop_words = set(stopwords.words('english'))
 dataset_path = "./Dataset_MAIN.xlsx"
 df = pd.read_excel(dataset_path, sheet_name="Sheet1")
 
-# Remove duplicates
 df.drop_duplicates(inplace=True)
-
-# Strip whitespace and standardize column names
 df.columns = df.columns.str.strip().str.lower()
 
-# Preprocess text function
 def preprocess_text(text):
     if isinstance(text, str):
         text = text.lower()
@@ -42,31 +38,47 @@ def preprocess_text(text):
         text = ""
     return text
 
-# Train LDA model on dataset
 vectorizer = CountVectorizer(stop_words='english', max_features=5000)
 X = vectorizer.fit_transform(df["abstract"].astype(str).apply(preprocess_text))
 lda = LatentDirichletAllocation(n_components=5, random_state=42)
 lda.fit(X)
 
-# Extract top keywords from user text using TF-IDF
 def extract_keywords(text, top_n=5):
-    vectorizer = TfidfVectorizer(stop_words='english', max_features=5000)
+    vectorizer = TfidfVectorizer(stop_words='english', max_features=5000, ngram_range=(1,2))
     tfidf_matrix = vectorizer.fit_transform([text])
     feature_array = np.array(vectorizer.get_feature_names_out())
     tfidf_sorting = np.argsort(tfidf_matrix.toarray()).flatten()[::-1]
+    
     top_keywords = feature_array[tfidf_sorting][:top_n]
-    return list(top_keywords)
+    
+    # Ensure multi-word phrases are correctly formatted
+    formatted_keywords = []
+    for keyword in top_keywords:
+        formatted_keyword = ' '.join([word.capitalize() for word in keyword.split()])
+        formatted_keywords.append(formatted_keyword)
+    
+    return formatted_keywords
 
-# Predict topic based on keywords and LDA
+
 def get_topic_from_lda(text):
     processed_text = preprocess_text(text)
     X_new = vectorizer.transform([processed_text])
     topic_distribution = lda.transform(X_new)[0]
-    topic_idx = topic_distribution.argmax()
     keywords = extract_keywords(processed_text)
     return f"{', '.join(keywords)}"
 
-# Extract images from PDF
+def is_logo(image):
+    width, height = image.size
+    aspect_ratio = width / height
+    
+    if width < 300 and height < 300:
+        return True  # Small image
+    
+    if 0.8 < aspect_ratio < 1.2:
+        return True  # Square aspect ratio (common for logos)
+    
+    return False
+
 def extract_images_from_pdf(file_bytes):
     doc = fitz.open(stream=file_bytes, filetype="pdf")
     images = []
@@ -76,11 +88,10 @@ def extract_images_from_pdf(file_bytes):
             base_image = doc.extract_image(xref)
             img_bytes = base_image["image"]
             img_pil = Image.open(BytesIO(img_bytes))
-            if img_pil.width > 100 and img_pil.height > 100:
+            if not is_logo(img_pil):
                 images.append(img_pil)
     return images
 
-# Extract images from DOCX
 def extract_images_from_docx(file):
     doc = docx.Document(file)
     images = []
@@ -88,9 +99,11 @@ def extract_images_from_docx(file):
         if "image" in doc.part.rels[rel].target_ref:
             img_bytes = doc.part.rels[rel].target_part.blob
             img_pil = Image.open(BytesIO(img_bytes))
-            if img_pil.width > 100 and img_pil.height > 100:
+            if not is_logo(img_pil):
                 images.append(img_pil)
     return images
+
+
 
 # Streamlit GUI
 st.title("Unsupervised Topic Modeling & Summarization of Scientific Research Documents")
