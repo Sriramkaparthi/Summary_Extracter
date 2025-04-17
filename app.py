@@ -56,7 +56,7 @@ except Exception as e:
 
 # Cache dataset loading for performance
 @st.cache_data
-def load_dataset(dataset_path="./DATASET.xlsx"):
+def load_dataset(dataset_path="./Dataset_MAIN.xlsx"):
     try:
         df = pd.read_excel(dataset_path, sheet_name="Sheet1")
         df.drop_duplicates(inplace=True)
