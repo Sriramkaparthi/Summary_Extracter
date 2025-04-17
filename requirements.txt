@@ -11,3 +11,8 @@ python-docx
 requests
 beautifulsoup4
 openpyxl
+rouge
+rouge_score
+textstat
+validators
+pytesseract
