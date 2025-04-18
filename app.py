@@ -58,7 +58,7 @@ except Exception as e:
 @st.cache_data
 def load_dataset(dataset_path="./Dataset_Main.csv"):
     try:
-        df = pd.read_excel(dataset_path, sheet_name="Sheet1")
+        df = pd.read_csv(dataset_path, sheet_name="Sheet1")
         df.drop_duplicates(inplace=True)
         df.columns = df.columns.str.strip().str.lower()
         logger.info("Dataset loaded successfully")
